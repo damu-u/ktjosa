@@ -19,7 +19,7 @@ Gradle:
 
 ```kotlin
 dependencies {
-    implementation("dev.damu:ktjosa:1.0.0")
+    implementation("dev.damu.ktjosa:ktjosa:1.0.0")
 }
 ```
 
