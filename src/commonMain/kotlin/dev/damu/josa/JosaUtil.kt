@@ -5,9 +5,13 @@ package dev.damu.josa
  * based on phonetic rules of the last character in a word.
  */
 object JosaUtil {
-    enum class LetterCategory { KOREAN, NUMBER, ALPHABET, OTHER }
+    private enum class LetterCategory { KOREAN, NUMBER, ALPHABET, OTHER }
 
-    private const val IGNORE_CHARS = "!?,.~'\";:{}[]()<>"
+    private const val HANGUL_BASE = '가'
+    private const val JONGSEONG_COUNT = 28
+    private const val RIEUL_JONGSEONG = 8
+
+    private val IGNORE_CHARS = setOf('!', '?', ',', '.', '~', '\'', '"', ';', ':', '{', '}', '[', ']', '(', ')', '<', '>')
     private val BATCHIM_NUMBERS = setOf('0', '1', '3', '6', '7', '8')
     private val VOWELS = setOf('a', 'i', 'o', 'u')
     private val VOWELS_ALL = setOf('a', 'e', 'i', 'o', 'u')
@@ -47,54 +51,52 @@ object JosaUtil {
     /**
      * Internal core logic for determining the proper josa form.
      *
-     * @param word trimmed word with punctuation removed
+     * @param word trimmed word
      * @param josa the josa to apply
      * @return either [Josa.withBatchim] or [Josa.withoutBatchim], depending on the word's ending
      */
     private fun resolveJosaForm(word: String, josa: Josa): String {
-        val base = word.trim()
-        if (base.isEmpty()) return josa.withoutBatchim
+        if (word.isEmpty()) return josa.withoutBatchim
 
-        val cleaned = base.trimEnd { it in IGNORE_CHARS }
+        // Special case: '이에/에' → always use '에'
+        if (josa == Josa.IYE_E) return josa.withoutBatchim
+
+        val cleaned = word.trimEnd { it in IGNORE_CHARS }
         if (cleaned.isEmpty()) return josa.withoutBatchim
 
         val lastChar = cleaned.last()
-        val hasBatchim = when (categoryOf(lastChar)) {
+        val category = categoryOf(lastChar)
+
+        // Special case: if josa is '-으로' and ends with ㄹ, treat as no batchim
+        if (josa.rieulEndsWithRo && category == LetterCategory.KOREAN) {
+            val jongseong = (lastChar.code - HANGUL_BASE.code) % JONGSEONG_COUNT
+            if (jongseong == RIEUL_JONGSEONG) return josa.withoutBatchim
+        }
+
+        val hasBatchim = when (category) {
             LetterCategory.KOREAN   -> hasBatchimKorean(lastChar)
             LetterCategory.NUMBER   -> lastChar in BATCHIM_NUMBERS
             LetterCategory.ALPHABET -> hasBatchimAlphabet(cleaned.lowercase())
             else                    -> false
         }
 
-        // Special case: if josa is '-으로' and ends with ㄹ, treat as no batchim
-        if (josa.rieulEndsWithRo && categoryOf(lastChar) == LetterCategory.KOREAN) {
-            val jong = (lastChar.code - '가'.code) % 28
-            if (jong == 8) return josa.withoutBatchim
-        }
-
-        // Special case: '이에/에' → always use '에'
-        if (josa == Josa.IYE_E) {
-            return josa.withoutBatchim
-        }
-
         return if (hasBatchim) josa.withBatchim else josa.withoutBatchim
     }
-
 
     /**
      * Categorizes a character into Korean, number, alphabet, or other.
      */
-    private fun categoryOf(c: Char) = when (c.lowercaseChar()) {
-        in '가'..'힣' -> LetterCategory.KOREAN
-        in '0'..'9'   -> LetterCategory.NUMBER
-        in 'a'..'z'   -> LetterCategory.ALPHABET
-        else          -> LetterCategory.OTHER
+    private fun categoryOf(c: Char) = when {
+        c in '가'..'힣'               -> LetterCategory.KOREAN
+        c in '0'..'9'                 -> LetterCategory.NUMBER
+        c.lowercaseChar() in 'a'..'z' -> LetterCategory.ALPHABET
+        else                          -> LetterCategory.OTHER
     }
 
     /**
      * Checks whether a given Hangul syllable character has a batchim (final consonant).
      */
-    private fun hasBatchimKorean(ch: Char) = (ch.code - '가'.code) % 28 != 0
+    private fun hasBatchimKorean(ch: Char) = (ch.code - HANGUL_BASE.code) % JONGSEONG_COUNT != 0
 
     /**
      * Heuristic rule to determine whether an English word ends with a batchim-like sound.

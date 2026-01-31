@@ -1,40 +1,54 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    kotlin("jvm") version "2.2.0"
-    id("com.vanniktech.maven.publish") version "0.34.0"
+    kotlin("multiplatform") version "2.3.0"
+    id("com.vanniktech.maven.publish") version "0.36.0"
 }
 
 group = "dev.damu.ktjosa"
-version = "1.0.0"
+version = "1.0.1"
 
 repositories {
     mavenCentral()
 }
 
-dependencies {
-    testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-
 kotlin {
-    jvmToolchain(21)
-
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_1_8)
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_1_8)
+        }
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
     }
-}
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+    iosArm64()
+    iosSimulatorArm64()
+
+    js {
+        browser()
+        nodejs()
     }
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+        nodejs()
+    }
+
+    sourceSets {
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation(kotlin("test-junit5"))
+            }
+        }
+    }
 }
 
 mavenPublishing {
