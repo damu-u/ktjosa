@@ -10,16 +10,29 @@
 - 숫자, 알파벳, 특수문자, 한글 모두 지원
 - 조사만 추출하거나 단어+조사 합성 둘 다 가능
 - 종성 'ㄹ' 예외 (예: "칼로", "말로써") 처리 포함
+- Kotlin Multiplatform 지원 (JVM, iOS, JS, wasmJs)
 
 ---
 
 ## 📦 Installation
 
-Gradle:
+Gradle (JVM):
 
 ```kotlin
 dependencies {
-    implementation("dev.damu.ktjosa:ktjosa:1.0.0")
+    implementation("dev.damu.ktjosa:ktjosa:1.0.1")
+}
+```
+
+Kotlin Multiplatform:
+
+```kotlin
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation("dev.damu.ktjosa:ktjosa:1.0.1")
+        }
+    }
 }
 ```
 
@@ -63,4 +76,4 @@ val josaOnly = JosaUtil.findJosa("책", Josa.EUL_REUL)
 
 ## 📜 License
 
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).

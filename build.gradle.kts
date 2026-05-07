@@ -69,8 +69,8 @@ mavenPublishing {
         developers {
             developer {
                 id.set("damu")
-                name.set("BeomSeok Choi")
-                email.set("zmmx019@gmail.com")
+                name.set("Damu")
+                email.set("damu@damu.dev")
             }
         }
 
